@@ -5,6 +5,7 @@ import Module2_Theory from './components/Module2_Theory';
 import Module3_Space from './components/Module3_Space';
 import Module4_Components from './components/Module4_Components';
 import Module5_Workflow from './components/Module5_Workflow';
+import AiTutor from './components/AiTutor';
 import { ModuleId } from './types';
 
 const App: React.FC = () => {
@@ -41,7 +42,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-[#1a1a2e] text-white min-h-screen pb-20">
+    <div className="bg-[#1a1a2e] text-white min-h-screen pb-20 relative">
       <section id={ModuleId.INTRO}>
         <Module1_Intro />
       </section>
@@ -59,6 +60,9 @@ const App: React.FC = () => {
       </section>
 
       <Navbar currentModule={currentModule} onNavigate={scrollToModule} />
+      
+      {/* Assistant Chatbot */}
+      <AiTutor />
     </div>
   );
 };
