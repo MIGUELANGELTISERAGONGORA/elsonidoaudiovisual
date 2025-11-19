@@ -5,11 +5,13 @@ const Module1_Intro: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-b from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
       
-      {/* Prominent Header for Professor */}
-      <div className="w-full bg-gradient-to-r from-[#e94560] to-[#0f3460] text-center py-3 px-4 shadow-[0_4px_20px_rgba(0,0,0,0.5)] z-50 border-b border-white/10 relative">
-        <p className="text-white font-bold md:text-lg tracking-wide flex items-center justify-center gap-2 font-serif">
-          <span>🎓</span> 
-          Material Didáctico: <span className="text-yellow-300">Prof. Miguelangel Tisera</span> — Realización Audiovisual
+      {/* Encabezado destacado del Profesor */}
+      <div className="w-full bg-gradient-to-r from-[#e94560] to-[#0f3460] text-center py-4 px-4 shadow-[0_4px_20px_rgba(0,0,0,0.5)] z-50 border-b border-white/10 relative">
+        <p className="text-white font-bold md:text-xl tracking-wide flex flex-col md:flex-row items-center justify-center gap-2 font-serif">
+          <span className="text-2xl">🎓</span> 
+          <span>Material Didáctico:</span>
+          <span className="text-yellow-300 text-lg md:text-xl uppercase border-b-2 border-yellow-300 pb-1">Prof. Miguelangel Tisera</span> 
+          <span className="opacity-80">— Realización Audiovisual</span>
         </p>
       </div>
 
