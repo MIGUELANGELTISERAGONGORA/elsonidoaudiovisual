@@ -33,11 +33,12 @@ const AiTutor: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // @ts-ignore - process is defined via Vite config
+      // Obtenemos la clave inyectada por Vite
+      // @ts-ignore
       const apiKey = process.env.API_KEY;
 
       if (!apiKey) {
-        throw new Error("La clave API no está configurada en el entorno.");
+        throw new Error("La clave API no está configurada. Por favor revisa la configuración en Netlify.");
       }
 
       const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -69,7 +70,7 @@ const AiTutor: React.FC = () => {
 
     } catch (error: any) {
       console.error("Error AI:", error);
-      setMessages(prev => [...prev, { role: 'model', text: `Error: ${error.message || 'No se pudo conectar con el servicio de IA.'}` }]);
+      setMessages(prev => [...prev, { role: 'model', text: `Error de conexión: ${error.message || 'Inténtalo de nuevo más tarde.'}` }]);
     } finally {
       setIsLoading(false);
     }
