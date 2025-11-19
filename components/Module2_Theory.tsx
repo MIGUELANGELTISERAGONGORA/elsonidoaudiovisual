@@ -50,7 +50,8 @@ const Module2_Theory: React.FC = () => {
           await sirenRef.current.play();
         }
       } catch (e) {
-        console.error("Audio play failed (interaction likely required):", e);
+        // Auto-play policies might block audio if no interaction occurred
+        console.log("Esperando interacción del usuario para reproducir audio.");
       }
     };
 
@@ -81,9 +82,9 @@ const Module2_Theory: React.FC = () => {
           </div>
           
           <div className="relative aspect-video bg-gray-800 rounded-xl overflow-hidden mb-6 group">
-             {/* Placeholder for Street Image */}
+             {/* Stable Image of Empty Street */}
              <img 
-               src="https://picsum.photos/800/450?grayscale" 
+               src="https://images.unsplash.com/photo-1517154596051-c2b5f6607433?q=80&w=1000&auto=format&fit=crop" 
                alt="Calle vacía" 
                className={`w-full h-full object-cover transition-all duration-500 ${selectedSound === 'siren' ? 'brightness-75 contrast-125 sepia' : ''} ${selectedSound === 'birds' ? 'brightness-110 saturate-150' : ''}`}
              />
