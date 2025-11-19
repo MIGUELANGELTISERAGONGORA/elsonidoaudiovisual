@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Carga las variables de entorno. El tercer argumento '' carga todas las variables.
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, (process as any).cwd(), '');
   
   // Prioriza la variable de entorno, pero usa la clave proporcionada como respaldo seguro
   const apiKey = env.API_KEY || "AIzaSyBwmeKLypgsbuiLd6jTe0u3XtLy8muPQC4";
