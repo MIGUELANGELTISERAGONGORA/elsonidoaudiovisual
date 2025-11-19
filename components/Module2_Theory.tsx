@@ -34,16 +34,16 @@ const Module2_Theory: React.FC = () => {
           audio.pause();
           audio.currentTime = 0;
         } catch (e) {
-          console.log("Error pausing audio (likely not playing)", e);
+          // Ignore pause errors if audio wasn't playing
         }
       }
     };
 
-    // Reset both first
+    // 1. Reset all audio first
     stopAndReset(birdsRef.current);
     stopAndReset(sirenRef.current);
 
-    // Play selected
+    // 2. Play selected audio
     const playAudio = async () => {
       try {
         if (selectedSound === 'birds' && birdsRef.current) {
@@ -54,8 +54,7 @@ const Module2_Theory: React.FC = () => {
           await sirenRef.current.play();
         }
       } catch (e) {
-        // Auto-play policies might block audio if no interaction occurred
-        console.log("Esperando interacción del usuario para reproducir audio.");
+        console.warn("Autoplay prevented. User interaction required.", e);
       }
     };
 
@@ -71,7 +70,7 @@ const Module2_Theory: React.FC = () => {
        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#e94560] opacity-90 z-0"></div>
        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 z-0 mix-blend-overlay"></div>
       
-       {/* Audio Elements */}
+       {/* Audio Elements - Preload enabled */}
        <audio ref={birdsRef} loop src="https://assets.mixkit.co/sfx/preview/mixkit-morning-birds-2472.mp3" preload="auto" />
        <audio ref={sirenRef} loop src="https://assets.mixkit.co/sfx/preview/mixkit-police-siren-loop-1195.mp3" preload="auto" />
 
@@ -131,10 +130,11 @@ const Module2_Theory: React.FC = () => {
 
             <div className="bg-black/30 p-5 rounded-xl border border-white/5 min-h-[100px]">
               <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Interpretación del espectador</p>
-              <h4 key={selectedSound} className="text-xl font-bold text-white mb-2 transition-all animate-fade-in">
+              {/* Use key to force re-render animation */}
+              <h4 key={`mood-${selectedSound}`} className="text-xl font-bold text-white mb-2 transition-all animate-fade-in">
                 {currentScenario.mood}
               </h4>
-              <p key={selectedSound + 'desc'} className="text-gray-300 text-sm italic animate-fade-in">{currentScenario.desc}</p>
+              <p key={`desc-${selectedSound}`} className="text-gray-300 text-sm italic animate-fade-in">{currentScenario.desc}</p>
             </div>
           </div>
 
