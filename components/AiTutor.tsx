@@ -33,9 +33,14 @@ const AiTutor: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Initialize AI with the key from environment variables
-      // NOTE: The key must be set in Netlify Environment Variables as API_KEY
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // @ts-ignore - process is defined via Vite config
+      const apiKey = process.env.API_KEY;
+
+      if (!apiKey) {
+        throw new Error("La clave API no está configurada en el entorno.");
+      }
+
+      const ai = new GoogleGenAI({ apiKey: apiKey });
       
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
