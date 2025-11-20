@@ -372,11 +372,35 @@ const Module2_Theory: React.FC = () => {
              <div className="bg-gradient-to-r from-indigo-900/90 to-[#1a1a2e]/90 p-8 rounded-2xl border-l-4 border-yellow-400 hover:translate-x-2 transition-transform shadow-lg">
                <h3 className="text-2xl font-bold text-yellow-400 mb-3">La Síncresis</h3>
                <p className="text-sm font-mono text-gray-400 mb-4 bg-black/30 inline-block px-2 py-1 rounded">Sincronismo + Síntesis</p>
-               <p className="text-gray-300 leading-relaxed">
-                 La soldadura inevitable entre un fenómeno sonoro y uno visual cuando ocurren simultáneamente. 
-                 <br/><br/>
-                 <span className="text-white font-semibold border-b border-yellow-400/30 pb-1">Ejemplo Clásico:</span> Foley. Golpear una sandía = Cabeza rota.
+               <p className="text-gray-300 leading-relaxed mb-4">
+                 La soldadura inevitable entre un fenómeno sonoro y uno visual cuando ocurren simultáneamente.
                </p>
+               
+               <div className="space-y-3 bg-black/20 p-4 rounded-lg">
+                  <div className="flex items-start gap-3 border-l-2 border-yellow-400/50 pl-3">
+                     <span className="text-xl">🍉</span>
+                     <div>
+                       <strong className="text-white text-sm block">Golpe de Puño</strong>
+                       <p className="text-xs text-gray-400">Visual: Puño pasa cerca. Sonido: Golpe a sandía/apio. Resultado: Sentimos el dolor del impacto.</p>
+                     </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 border-l-2 border-cyan-400/50 pl-3">
+                     <span className="text-xl">🔦</span>
+                     <div>
+                       <strong className="text-white text-sm block">Sable de Luz</strong>
+                       <p className="text-xs text-gray-400">Visual: Palo con luz. Sonido: Zumbido TV antigua + Motor proyector. Resultado: Arma energética mortal.</p>
+                     </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 border-l-2 border-pink-400/50 pl-3">
+                     <span className="text-xl">🏃</span>
+                     <div>
+                       <strong className="text-white text-sm block">Animación</strong>
+                       <p className="text-xs text-gray-400">Visual: Personaje corriendo. Sonido: Neumáticos derrapando. Resultado: Velocidad imposible.</p>
+                     </div>
+                  </div>
+               </div>
              </div>
 
              <div className="bg-[#1a1a2e]/80 backdrop-blur-sm p-8 rounded-2xl border border-white/5 shadow-lg">
