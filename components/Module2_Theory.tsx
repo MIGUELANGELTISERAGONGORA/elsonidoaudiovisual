@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Music, Zap, Radio, Volume2, VolumeX, Sparkles, Loader2, ImageIcon, Mic } from 'lucide-react';
+import { ArrowRight, Music, Zap, Radio, Volume2, VolumeX, Sparkles, Loader2, ImageIcon, Mic, Play } from 'lucide-react';
 import { GoogleGenAI, Modality } from "@google/genai";
 
 const Module2_Theory: React.FC = () => {
@@ -7,10 +7,12 @@ const Module2_Theory: React.FC = () => {
   const [bgImage, setBgImage] = useState<string>("https://images.unsplash.com/photo-1517154596051-c2b5f6607433?q=80&w=1000&auto=format&fit=crop");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   // Audio Context Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
 
   const scenarios = {
     none: {
@@ -20,28 +22,53 @@ const Module2_Theory: React.FC = () => {
     },
     birds: {
       mood: "Paz / Mañana Tranquila",
-      desc: "La voz suave sugiere seguridad y calma. El 'Valor Añadido' es la serenidad.",
+      desc: "La voz suave y poética transforma la calle en un lugar seguro. El 'Valor Añadido' es la serenidad proyectada por el tono.",
       color: "border-green-400 shadow-[0_0_30px_rgba(74,222,128,0.4)]"
     },
     siren: {
-      mood: "Tensión / Crimen",
-      desc: "La radio policial transforma la calle vacía en una escena del crimen inminente.",
+      mood: "Tensión / Terror",
+      desc: "Una alerta de emergencia distópica convierte la misma imagen en una zona de guerra inminente.",
       color: "border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)]"
     }
   };
 
   const currentScenario = scenarios[selectedSound as keyof typeof scenarios] || scenarios.none;
 
-  // Helper: Decode Base64 Audio
-  const decodeAudioData = async (base64String: string, ctx: AudioContext) => {
-    const binaryString = atob(base64String);
+  // Helper: Decode Base64 string to Uint8Array
+  const base64ToBytes = (base64: string): Uint8Array => {
+    const binaryString = atob(base64);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    // Decode the raw audio data
-    return await ctx.decodeAudioData(bytes.buffer);
+    return bytes;
+  };
+
+  // Helper: Convert PCM Data to AudioBuffer manually
+  const pcmToAudioBuffer = (
+    data: Uint8Array,
+    ctx: AudioContext,
+    sampleRate: number = 24000,
+    numChannels: number = 1
+  ): AudioBuffer => {
+    // Ensure data length is even (16-bit samples)
+    const length = data.length;
+    const alignedLength = length % 2 === 0 ? length : length - 1;
+    const alignedData = data.slice(0, alignedLength);
+
+    const dataInt16 = new Int16Array(alignedData.buffer);
+    const frameCount = dataInt16.length / numChannels;
+    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+    for (let channel = 0; channel < numChannels; channel++) {
+      const channelData = buffer.getChannelData(channel);
+      for (let i = 0; i < frameCount; i++) {
+        // Convert Int16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
+        channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+      }
+    }
+    return buffer;
   };
 
   // Generate AI Audio (TTS)
@@ -49,16 +76,22 @@ const Module2_Theory: React.FC = () => {
     // Stop previous audio
     if (currentSourceRef.current) {
       currentSourceRef.current.stop();
+      currentSourceRef.current = null;
     }
-    
+    setIsPlaying(false);
     setIsGeneratingAudio(true);
 
     try {
       // Initialize Audio Context on user gesture
       if (!audioContextRef.current) {
         // @ts-ignore
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        // Create Gain Node for Volume control
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.gain.value = 1.5; 
+        gainNodeRef.current.connect(audioContextRef.current.destination);
       }
+
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
@@ -69,20 +102,26 @@ const Module2_Theory: React.FC = () => {
 
       const ai = new GoogleGenAI({ apiKey });
       
-      // Define prompts and voice config based on type
+      // Use TTS model as it is more stable than native-audio for this purpose currently
+      const modelName = "gemini-2.5-flash-preview-tts";
+
       let promptText = "";
       let voiceName = "Kore"; // Default soft voice
 
       if (type === 'birds') {
-        promptText = "Say softly and poetically in Spanish: 'La ciudad despierta en paz. Una brisa suave recorre las calles vacías. Todo está tranquilo hoy.'";
-        voiceName = "Kore"; 
+        // Peace / Meditation - Soft voice
+        voiceName = "Kore";
+        // Simple text for TTS to read
+        promptText = "The city is sleeping. Feel the gentle morning breeze. Everything is calm. The birds are singing. Peace.";
       } else {
-        promptText = "Say urgently and aggressively like a police dispatcher in Spanish: '¡Atención a todas las unidades! ¡Código Rojo en el sector 4! ¡Despejen el área inmediatamente!'";
-        voiceName = "Fenrir"; // Deeper, more authoritative voice
+        // Terror / Siren - Deep/Harsh voice
+        voiceName = "Fenrir";
+        // Simple text for TTS to read
+        promptText = "Emergency. Warning. Curfew violation detected. Remain indoors. Patrols are approaching. Danger.";
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
+        model: modelName,
         contents: [{ parts: [{ text: promptText }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -97,24 +136,53 @@ const Module2_Theory: React.FC = () => {
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
       if (base64Audio && audioContextRef.current) {
-        const audioBuffer = await decodeAudioData(base64Audio, audioContextRef.current);
+        const audioBytes = base64ToBytes(base64Audio);
+        // Verify we have data
+        if (audioBytes.length < 100) {
+          throw new Error("Audio generated was empty or too short");
+        }
+
+        const audioBuffer = pcmToAudioBuffer(audioBytes, audioContextRef.current);
+        
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
+        // Connect to Gain Node instead of Destination directly
+        source.connect(gainNodeRef.current!); 
+        
         source.start();
-        source.onended = () => setIsGeneratingAudio(false);
+        setIsPlaying(true);
+        
+        source.onended = () => {
+          setIsPlaying(false);
+          setIsGeneratingAudio(false);
+        };
         currentSourceRef.current = source;
+      } else {
+        // Check for text error response
+        const textPart = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (textPart) {
+            console.warn("Model returned text:", textPart);
+            throw new Error("La IA devolvió texto en lugar de audio.");
+        }
+        throw new Error("No audio data received in response");
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating audio:", error);
-      alert("Error generando audio con IA. Verifica la consola.");
+      let msg = "Error generando audio.";
+      if (error.message && error.message.includes("500")) {
+        msg = "Error del servidor de IA (500). Intenta de nuevo.";
+      } else if (error.message && error.message.includes("404")) {
+        msg = "Modelo de audio no encontrado.";
+      }
+      alert(msg);
+      setIsPlaying(false);
     } finally {
       setIsGeneratingAudio(false);
     }
   };
 
-  // Function to generate city image using Gemini 2.5 Flash Image (Nano Banana)
+  // Function to generate city image
   const generateCityImage = async () => {
     setIsGeneratingImage(true);
     try {
@@ -155,7 +223,10 @@ const Module2_Theory: React.FC = () => {
   const handleSoundSelection = (type: string) => {
     setSelectedSound(type);
     if (type === 'none') {
-       if (currentSourceRef.current) currentSourceRef.current.stop();
+       if (currentSourceRef.current) {
+         currentSourceRef.current.stop();
+         setIsPlaying(false);
+       }
     } else {
        generateAndPlayAiAudio(type as 'birds' | 'siren');
     }
@@ -212,22 +283,46 @@ const Module2_Theory: React.FC = () => {
                
                {/* Loading Overlay */}
                {(isGeneratingImage || isGeneratingAudio) && (
-                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-white z-20 transition-opacity">
-                    <Loader2 size={48} className="animate-spin text-cyan-400 mb-4" />
-                    <p className="font-mono text-sm animate-pulse">
-                      {isGeneratingImage ? "Creando ciudad con Gemini Nano..." : "Generando atmósfera sonora con Gemini Audio..."}
-                    </p>
+                 <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center text-white z-20 transition-opacity rounded-xl">
+                    {isGeneratingImage ? (
+                      <>
+                        <Loader2 size={48} className="animate-spin text-purple-400 mb-4" />
+                        <p className="font-mono text-sm animate-pulse text-purple-200">
+                          Generando imagen urbana con Gemini Nano...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        {/* Animated Audio Wave */}
+                        <div className="flex items-end justify-center gap-2 mb-4 h-12">
+                           <div className="w-2 h-6 bg-cyan-400 rounded-full animate-[bounce_1s_infinite] delay-75"></div>
+                           <div className="w-2 h-10 bg-cyan-400 rounded-full animate-[bounce_1.2s_infinite] delay-150"></div>
+                           <div className="w-2 h-12 bg-cyan-400 rounded-full animate-[bounce_0.8s_infinite] delay-300"></div>
+                           <div className="w-2 h-8 bg-cyan-400 rounded-full animate-[bounce_1.1s_infinite] delay-100"></div>
+                           <div className="w-2 h-4 bg-cyan-400 rounded-full animate-[bounce_0.9s_infinite] delay-200"></div>
+                        </div>
+                        <p className="font-mono text-sm animate-pulse text-cyan-300 font-bold">
+                          Diseñando Narrativa Sonora con IA...
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">(Gemini TTS Voice Acting)</p>
+                      </>
+                    )}
                  </div>
                )}
 
                <div className={`absolute inset-0 border-4 transition-all duration-500 pointer-events-none ${currentScenario.color}`}></div>
                
                {/* Visual Feedback for Sound */}
-               {selectedSound !== 'none' && !isGeneratingAudio && (
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 animate-pulse border border-white/20">
-                    <Volume2 size={16} />
+               {(isPlaying || (selectedSound !== 'none' && !isGeneratingAudio)) && (
+                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 animate-pulse border border-white/20 shadow-lg">
+                    {isPlaying ? <div className="flex gap-1 items-center h-4">
+                      <div className="w-1 h-3 bg-green-400 animate-bounce" style={{animationDelay: '0s'}}></div>
+                      <div className="w-1 h-4 bg-green-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-1 h-2 bg-green-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div> : <Volume2 size={16} />}
+                    
                     <span className="text-sm uppercase font-bold">
-                      {selectedSound === 'birds' ? 'Atmósfera: Paz' : 'Atmósfera: Peligro'}
+                      {isPlaying ? 'Reproduciendo...' : selectedSound}
                     </span>
                   </div>
                )}
@@ -251,14 +346,14 @@ const Module2_Theory: React.FC = () => {
                 disabled={isGeneratingAudio}
                 className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all transform hover:-translate-y-1 ${selectedSound === 'birds' ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 ring-2 ring-green-400' : 'bg-gray-800 text-gray-400 hover:bg-green-900/50 hover:text-green-400'}`}
               >
-                <Mic size={18} /> Narrativa Paz (IA)
+                <Music size={18} /> Ambiente: Paz
               </button>
               <button 
                 onClick={() => handleSoundSelection('siren')}
                 disabled={isGeneratingAudio}
                 className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all transform hover:-translate-y-1 ${selectedSound === 'siren' ? 'bg-red-600 text-white shadow-lg shadow-red-500/30 ring-2 ring-red-400' : 'bg-gray-800 text-gray-400 hover:bg-red-900/50 hover:text-red-400'}`}
               >
-                <Mic size={18} /> Narrativa Tensión (IA)
+                <Music size={18} /> Ambiente: Terror
               </button>
             </div>
 
